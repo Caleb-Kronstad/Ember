@@ -1,0 +1,47 @@
+{
+    "10000000": {
+        "author": "Lana Del Rey",
+        "name": "I Talk to Jesus",
+        "path": "Files/Audios/italktojesus_lanadelrey.mp3"
+    },
+    "10000001": {
+        "author": "Gabriel Brogdon",
+        "name": "Calcified Village",
+        "path": "Files/Audios/CalcifiedVillage.mp3"
+    },
+    "10000002": {
+        "author": "Gabriel Brogdon",
+        "name": "Cathedral",
+        "path": "Files/Audios/Cathedral.mp3"
+    },
+    "10000003": {
+        "author": "Gabriel Brogdon",
+        "name": "Cathedral Boss",
+        "path": "Files/Audios/CathedralBoss.mp3"
+    },
+    "10000004": {
+        "author": "Gabriel Brogdon",
+        "name": "Cathedral (King's Field)",
+        "path": "Files/Audios/CathedralKF.mp3"
+    },
+    "10000005": {
+        "author": "Gabriel Brogdon",
+        "name": "Stone Grove",
+        "path": "Files/Audios/StoneGrove.mp3"
+    },
+    "10000006": {
+        "author": "Gabriel Brogdon",
+        "name": "The Hollow",
+        "path": "Files/Audios/TheHollow.mp3"
+    },
+    "10000007": {
+        "author": "Gabriel Brogdon",
+        "name": "Final Boss",
+        "path": "Files/Audios/FinalBoss.mp3"
+    },
+    "10000008": {
+        "author": "Gabriel Brogdon",
+        "name": "Final Boss (Alternate)",
+        "path": "Files/Audios/FinalBoss2.mp3"
+    }
+}

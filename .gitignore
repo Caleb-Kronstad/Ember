@@ -1,0 +1,9 @@
+
+*.sln
+*.vcxproj
+*.filters
+Library/
+Intermediate/
+
+.idea/
+.user
