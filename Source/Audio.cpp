@@ -47,6 +47,13 @@ namespace Ember
         ma_sound_stop(&sound);
     }
 
+    void Audio::Restart()
+    {
+        if (!initialized) return;
+        ma_sound_seek_to_pcm_frame(&sound, 0);
+        ma_sound_start(&sound);
+    }
+
     bool Audio::Playing() const
     {
         if (!initialized) return false;

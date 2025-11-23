@@ -4,6 +4,11 @@
 
 #include "External.hpp"
 #include "Helpers.hpp"
+#include "Display.hpp"
+
+#ifdef _WIN32
+#pragma comment(linker, "/SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup")
+#endif
 
 namespace Ember
 {
@@ -63,6 +68,7 @@ namespace Ember
         }
         std::shared_ptr<Audio> new_audio = std::make_shared<Audio>(&engine, id, name, author, path);
         audios.insert_or_assign(id, new_audio);
+        audio_order.push_back(id);
         return true;
     }
     bool Ember::RemoveAudio(uint32_t audio_id)
@@ -73,6 +79,7 @@ namespace Ember
             return false;
         }
         audios.erase(audio_id);
+        audio_order.erase(std::remove(audio_order.begin(), audio_order.end(), audio_id), audio_order.end());
         return true;
     }
     bool Ember::SetAudio(uint32_t audio_id)
@@ -89,6 +96,14 @@ namespace Ember
         Play();
         return true;
     }
+    void Ember::MoveAudio(size_t from_index, size_t to_index)
+    {
+        if (from_index >= audio_order.size() || to_index >= audio_order.size()) return;
+        uint32_t id = audio_order[from_index];
+        audio_order.erase(audio_order.begin() + from_index);
+        audio_order.insert(audio_order.begin() + to_index, id);
+    }
+
 
     void Ember::Play()
     {
@@ -108,13 +123,13 @@ namespace Ember
         volume = vol;
         std::shared_ptr<Audio> audio = audios.at(current_audio_id);
         if (!audio->initialized) return;
-        ma_sound_set_volume(&audio->sound, Clamp(volume, 0.0f, 1.0f));
+        ma_sound_set_volume(&audio->sound, volume / 100.0f);
     }
     float Ember::GetVolume() const
     {
         std::shared_ptr<Audio> audio = audios.at(current_audio_id);
         if (!audio->initialized) return 0.0f;
-        return ma_sound_get_volume(&audio->sound);
+        return ma_sound_get_volume(&audio->sound) * 100.0f;
     }
     void Ember::SetLoop(bool looping)
     {
@@ -184,13 +199,16 @@ namespace Ember
             return false;
         }
 
-        for (auto& [key, value] : json.items())
+        if (json.contains("order") && json["order"].is_array())
         {
-            uint32_t id = std::stoul(key);
-            std::string name = value["name"].get<std::string>();
-            std::string author = value["author"].get<std::string>();
-            std::string path = value["path"].get<std::string>();
-            AddAudio(name, author, path, id);
+            for (auto& item : json["order"])
+            {
+                uint32_t id = item["id"].get<uint32_t>();
+                std::string name = item["name"].get<std::string>();
+                std::string author = item["author"].get<std::string>();
+                std::string path = item["path"].get<std::string>();
+                AddAudio(name, author, path, id);
+            }
         }
         file.close();
 
@@ -200,16 +218,20 @@ namespace Ember
     bool Ember::SaveAudios(const std::string& json_path)
     {
         nlohmann::json json;
+        nlohmann::json order_json;
 
-        for (const auto& [key, value] : audios)
+        for (uint32_t id : audio_order)
         {
-            std::string id = std::to_string(key);
-            json[id] = {
-                {"name", value->name},
-                {"author", value->author},
-                {"path", value->path}
-            };
+            const auto& audio = audios.at(id);
+            order_json.push_back({
+                {"id", id},
+                {"name", audio->name},
+                {"author", audio->author},
+                {"path", audio->path}
+            });
         }
+
+        json["order"] = order_json;
 
         std::ofstream file(json_path);
         if (!file.is_open())
@@ -295,159 +317,6 @@ namespace Ember
 
 
 
-
-
-
-
-bool display_song_info = false;
-bool show_rename_popup = false;
-uint32_t rename_audio_id = 0;
-char rename_buffer_name[256] = "";
-char rename_buffer_author[256] = "";
-
-void AddExternalAudio(Ember::Ember& ember)
-{
-    char exe_path[MAX_PATH];
-    GetModuleFileNameA(NULL, exe_path, MAX_PATH);
-    std::filesystem::path exe_dir = std::filesystem::path(exe_path).parent_path();
-    std::filesystem::path audio_dir = exe_dir / "Data/Resources/Audio";
-    std::string audio_file = std::string(MAX_PATH, '\0');
-            
-    OPENFILENAMEA ofn;
-    ZeroMemory(&ofn, sizeof(OPENFILENAME));
-    ofn.lStructSize = sizeof(OPENFILENAME);
-    ofn.lpstrFile = (LPSTR)audio_file.c_str();
-    ofn.nMaxFile = audio_file.size();
-    ofn.lpstrInitialDir = audio_dir.string().c_str();
-    ofn.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR;
-    ofn.lpstrFilter = "Audio Files\0*.wav;*.mp3;*.ogg;*.flac\0WAV Files\0*.wav\0MP3 Files\0*.mp3\0OGG Files\0*.ogg\0FLAC Files\0*.flac\0All Files\0*.*\0";
-    ofn.lpstrTitle = "Select audio file";
-    
-    if (GetOpenFileNameA(&ofn))
-    {
-        audio_file.resize(audio_file.find('\0'));
-        std::filesystem::path absolute_path = audio_file;
-        std::string abs_str = absolute_path.string();
-        std::string relative_audio_path;
-        size_t data_pos = abs_str.find("Data");
-        if (data_pos != std::string::npos)
-        {
-            relative_audio_path = abs_str.substr(data_pos);
-            std::replace(relative_audio_path.begin(), relative_audio_path.end(), '\\', '/');
-        }
-        else
-            relative_audio_path = audio_file;
-
-        std::filesystem::path path_obj(relative_audio_path);
-        std::string audio_name = path_obj.stem().string();
-
-        ember.AddAudio(audio_name, "Author's Name", relative_audio_path);
-        Kiln::Log::Info("Loaded audio " + audio_name);
-    }
-    else
-        Kiln::Log::Info("File operation cancelled");
-}
-
-void DisplayAudios(Ember::Ember& ember)
-{
-    for (auto& [id, audio] : ember.GetAudios())
-    {
-        ImGui::Spacing();
-        ImGui::Spacing();
-        ImGui::PushID(id);
-            
-        if (ImGui::Button(audio->name.c_str()))
-            ember.SetAudio(audio->id);
-
-        if (ImGui::BeginPopupContextItem())
-        {
-            if (ImGui::MenuItem("Rename"))
-            {
-                rename_audio_id = id;
-                strncpy_s(rename_buffer_name, audio->name.c_str(), sizeof(rename_buffer_name) - 1);
-                strncpy_s(rename_buffer_author, audio->author.c_str(), sizeof(rename_buffer_author) - 1);
-                show_rename_popup = true;
-            }
-            ImGui::EndPopup();
-        }
-
-        if (display_song_info)
-        {
-            ImGui::Text(("Author: " + audio->author).c_str());
-            ImGui::Text(("Path: " + audio->path).c_str());
-            ImGui::Text(("ID: " + std::to_string(id)).c_str());
-        }
-
-        ImGui::PopID();
-    }
-
-    if (show_rename_popup)
-    {
-        ImGui::OpenPopup("Rename Audio");
-        show_rename_popup = false;
-    }
-
-    ImVec2 center = ImGui::GetMainViewport()->GetCenter();
-    ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-
-    ImGui::PushStyleColor(ImGuiCol_TitleBgActive, ImVec4(116.0f/255.0f, 77.0f/255.0f, 169.0f/255.0f, 1.0f));
-    if (ImGui::BeginPopupModal("Rename Audio", NULL, ImGuiWindowFlags_AlwaysAutoResize))
-    {
-        ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(38.0f/255.0f, 38.0f/255.0f, 38.0f/255.0f, 1.0f));
-        ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ImVec4(56.0f/255.0f, 56.0f/255.0f, 56.0f/255.0f, 1.0f));
-        ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(141.0f/255.0f, 124.0f/255.0f, 192.0f/255.0f, 1.0f));
-        ImGui::Text("Name:");
-        ImGui::InputText("##name", rename_buffer_name, sizeof(rename_buffer_name));
-
-        ImGui::Spacing();
-        ImGui::Text("Author:");
-        ImGui::InputText("##author", rename_buffer_author, sizeof(rename_buffer_author));
-        ImGui::PopStyleColor(3);
-
-        ImGui::Spacing();
-        ImGui::Separator();
-
-        if (ImGui::Button("Apply", ImVec2(120, 0)))
-        {
-            ember.RenameAudio(rename_audio_id,
-                             std::string(rename_buffer_name),
-                             std::string(rename_buffer_author));
-            ImGui::CloseCurrentPopup();
-        }
-
-        ImGui::SameLine();
-        if (ImGui::Button("Cancel", ImVec2(120, 0)))
-        {
-            ImGui::CloseCurrentPopup();
-        }
-
-        ImGui::EndPopup();
-    }
-    ImGui::PopStyleColor();
-}
-
-std::string FormatTime(float seconds)
-{
-    int totalSeconds = static_cast<int>(seconds);
-    int minutes = totalSeconds / 60;
-    int secs = totalSeconds % 60;
-
-    char buffer[16];
-    snprintf(buffer, sizeof(buffer), "%d:%02d", minutes, secs);
-    return std::string(buffer);
-}
-
-float CalculateDeltaTime(float& last_frame_time)
-{
-    float currentFrameTime = static_cast<float>(glfwGetTime());
-    float delta_time = currentFrameTime - last_frame_time;
-    last_frame_time = currentFrameTime;
-    return delta_time;
-}
-
-
-
-
 int main()
 {
     GLFWwindow* window = Kiln::Initialize("Ember");
@@ -479,40 +348,57 @@ int main()
         ImGui::Spacing();
         
         ImGui::PushItemWidth(200.0f);
-        if (ImGui::SliderFloat("Volume", &ember.volume, 0.0f, 1.0f))
-            ember.SetVolume(ember.volume);
-        ImGui::SameLine();
         if (ImGui::Checkbox("Loop", &ember.loop))
             ember.SetLoop(ember.loop);
-        ImGui::SameLine();
-        ImGui::Checkbox("Display Information", &display_song_info);
-
+        if (ImGui::SliderFloat("Volume", &ember.volume, 0.0f, 100.0f, "%.1f"))
+            ember.SetVolume(ember.volume);
+        ImGui::Spacing();
+        ImGui::Spacing();
+        
         if (ImGui::Button("Play"))
             ember.Play();
         ImGui::SameLine();
         if (ImGui::Button("Pause"))
             ember.Pause();
-        ImGui::SameLine();
-        if (ImGui::Button("+"))
-            AddExternalAudio(ember);
+
+        static bool space_was_presseed = false;
+        bool space_is_pressed = glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS;
+        if (space_is_pressed && !space_was_presseed)
+        {
+            if (ember.GetCurrentAudio()->Playing())
+                ember.Pause();
+            else
+                ember.Play();
+        }
+        space_was_presseed = space_is_pressed;
 	    
-        float currentPos = ember.GetPosition();
+        float current_pos = ember.GetPosition();
         float duration = ember.GetDuration();
         if (duration > 0.0f)
         {
-            float progress = currentPos / duration;
+            float progress = current_pos / duration;
             ImGui::Separator();
-            ImGui::Text("Progress");
-            ImGui::ProgressBar(progress, ImVec2(-1, 0), (FormatTime(currentPos) + " / " + FormatTime(duration)).c_str());
 
-            float scrubTime = currentPos;
+            DisplayCurrentAudioInformation(ember);
+        
+            ImGui::Spacing();
+            ImGui::Spacing();
+            
+            ImGui::ProgressBar(progress, ImVec2(-1, 0), (FormatTime(current_pos) + " / " + FormatTime(duration)).c_str());
+
+            float scrub_time = current_pos;
             ImGui::PushItemWidth(-1);
-            if (ImGui::SliderFloat("##Scrub", &scrubTime, 0.0f, duration, FormatTime(scrubTime).c_str()))
-                ember.Seek(scrubTime);
+            if (ImGui::SliderFloat("##Scrub", &scrub_time, 0.0f, duration, FormatTime(scrub_time).c_str()))
+                ember.Seek(scrub_time);
             ImGui::PopItemWidth();
         }
         
         ImGui::Separator();
+
+        ImGui::Spacing();
+        if (ImGui::Button("+"))
+            AddExternalAudio(ember);
+        
         DisplayAudios(ember);
         
         ImGui::PopItemWidth();

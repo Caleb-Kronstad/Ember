@@ -17,6 +17,7 @@ namespace Ember
         bool AddAudio(const std::string& name, const std::string& author, const std::string& path, uint32_t id = 0);
         bool RemoveAudio(uint32_t audio_id);
         bool SetAudio(uint32_t audio_id);
+        std::shared_ptr<Audio> GetCurrentAudio() { return audios.at(current_audio_id); }
 
         void Play();
         void Pause();
@@ -38,6 +39,9 @@ namespace Ember
         float GetPosition() const;
         bool Seek(float time_in_seconds);
 
+        void MoveAudio(size_t from_index, size_t to_index);
+        const std::vector<uint32_t>& GetAudioOrder() { return audio_order; }
+
         bool RenameAudio(uint32_t audio_id, const std::string& new_name, const std::string& new_author);
         const std::unordered_map<uint32_t, std::shared_ptr<Audio>>& GetAudios() { return audios; }
 
@@ -46,6 +50,7 @@ namespace Ember
         float volume = 1.0f;
 
     private:
+        std::vector<uint32_t> audio_order;
         std::unordered_map<uint32_t, std::shared_ptr<Audio>> audios;
         uint32_t current_audio_id;
         ma_engine engine;

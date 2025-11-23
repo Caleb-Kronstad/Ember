@@ -13,6 +13,7 @@ namespace Ember
         void Play();
         void Pause();
         void Stop();
+        void Restart();
         
         bool Playing() const;
         bool Paused() const;

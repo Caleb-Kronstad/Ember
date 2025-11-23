@@ -1,6 +1,69 @@
 #pragma once
 
 #include "External.hpp"
+#include "Ember.hpp"
+
+inline void AddExternalAudio(Ember::Ember& ember)
+{
+    char exe_path[MAX_PATH];
+    GetModuleFileNameA(NULL, exe_path, MAX_PATH);
+    std::filesystem::path exe_dir = std::filesystem::path(exe_path).parent_path();
+    std::filesystem::path audio_dir = exe_dir / "Data/Resources/Audio";
+    std::string audio_file = std::string(MAX_PATH, '\0');
+            
+    OPENFILENAMEA ofn;
+    ZeroMemory(&ofn, sizeof(OPENFILENAME));
+    ofn.lStructSize = sizeof(OPENFILENAME);
+    ofn.lpstrFile = (LPSTR)audio_file.c_str();
+    ofn.nMaxFile = audio_file.size();
+    ofn.lpstrInitialDir = audio_dir.string().c_str();
+    ofn.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR;
+    ofn.lpstrFilter = "Audio Files\0*.wav;*.mp3;*.ogg;*.flac\0WAV Files\0*.wav\0MP3 Files\0*.mp3\0OGG Files\0*.ogg\0FLAC Files\0*.flac\0All Files\0*.*\0";
+    ofn.lpstrTitle = "Select audio file";
+    
+    if (GetOpenFileNameA(&ofn))
+    {
+        audio_file.resize(audio_file.find('\0'));
+        std::filesystem::path absolute_path = audio_file;
+        std::string abs_str = absolute_path.string();
+        std::string relative_audio_path;
+        size_t data_pos = abs_str.find("Data");
+        if (data_pos != std::string::npos)
+        {
+            relative_audio_path = abs_str.substr(data_pos);
+            std::replace(relative_audio_path.begin(), relative_audio_path.end(), '\\', '/');
+        }
+        else
+            relative_audio_path = audio_file;
+
+        std::filesystem::path path_obj(relative_audio_path);
+        std::string audio_name = path_obj.stem().string();
+
+        ember.AddAudio(audio_name, "Author's Name", relative_audio_path);
+        Kiln::Log::Info("Loaded audio " + audio_name);
+    }
+    else
+        Kiln::Log::Info("File operation cancelled");
+}
+
+inline std::string FormatTime(float seconds)
+{
+    int totalSeconds = static_cast<int>(seconds);
+    int minutes = totalSeconds / 60;
+    int secs = totalSeconds % 60;
+
+    char buffer[16];
+    snprintf(buffer, sizeof(buffer), "%d:%02d", minutes, secs);
+    return std::string(buffer);
+}
+
+inline float CalculateDeltaTime(float& last_frame_time)
+{
+    float currentFrameTime = static_cast<float>(glfwGetTime());
+    float delta_time = currentFrameTime - last_frame_time;
+    last_frame_time = currentFrameTime;
+    return delta_time;
+}
 
 inline extern void SetInterfaceStyle(
     ImVec4 text_primary = ImVec4(255.0f/255.0f, 255.0f/255.0f, 255.0f/255.0f, 1.0f),

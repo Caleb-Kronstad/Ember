@@ -1,47 +1,58 @@
 {
-    "10000000": {
-        "author": "Lana Del Rey",
-        "name": "I Talk to Jesus",
-        "path": "Files/Audios/italktojesus_lanadelrey.mp3"
-    },
-    "10000001": {
-        "author": "Gabriel Brogdon",
-        "name": "Calcified Village",
-        "path": "Files/Audios/CalcifiedVillage.mp3"
-    },
-    "10000002": {
-        "author": "Gabriel Brogdon",
-        "name": "Cathedral",
-        "path": "Files/Audios/Cathedral.mp3"
-    },
-    "10000003": {
-        "author": "Gabriel Brogdon",
-        "name": "Cathedral Boss",
-        "path": "Files/Audios/CathedralBoss.mp3"
-    },
-    "10000004": {
-        "author": "Gabriel Brogdon",
-        "name": "Cathedral (King's Field)",
-        "path": "Files/Audios/CathedralKF.mp3"
-    },
-    "10000005": {
-        "author": "Gabriel Brogdon",
-        "name": "Stone Grove",
-        "path": "Files/Audios/StoneGrove.mp3"
-    },
-    "10000006": {
-        "author": "Gabriel Brogdon",
-        "name": "The Hollow",
-        "path": "Files/Audios/TheHollow.mp3"
-    },
-    "10000007": {
-        "author": "Gabriel Brogdon",
-        "name": "Final Boss",
-        "path": "Files/Audios/FinalBoss.mp3"
-    },
-    "10000008": {
-        "author": "Gabriel Brogdon",
-        "name": "Final Boss (Alternate)",
-        "path": "Files/Audios/FinalBoss2.mp3"
-    }
+    "order": [
+        {
+            "author": "Gabriel Brogdon",
+            "id": 10000001,
+            "name": "Calcified Village",
+            "path": "Files/Audios/CalcifiedVillage.mp3"
+        },
+        {
+            "author": "Gabriel Brogdon",
+            "id": 10000006,
+            "name": "The Hollow",
+            "path": "Files/Audios/TheHollow.mp3"
+        },
+        {
+            "author": "Gabriel Brogdon",
+            "id": 10000002,
+            "name": "Cathedral",
+            "path": "Files/Audios/Cathedral.mp3"
+        },
+        {
+            "author": "Gabriel Brogdon",
+            "id": 10000003,
+            "name": "Cathedral Boss",
+            "path": "Files/Audios/CathedralBoss.mp3"
+        },
+        {
+            "author": "Gabriel Brogdon",
+            "id": 10000004,
+            "name": "Cathedral (King's Field)",
+            "path": "Files/Audios/CathedralKF.mp3"
+        },
+        {
+            "author": "Gabriel Brogdon",
+            "id": 10000005,
+            "name": "Stone Grove",
+            "path": "Files/Audios/StoneGrove.mp3"
+        },
+        {
+            "author": "Lana Del Rey",
+            "id": 10000000,
+            "name": "I Talk to Jesus",
+            "path": "Files/Audios/italktojesus_lanadelrey.mp3"
+        },
+        {
+            "author": "Author's Name",
+            "id": 10000007,
+            "name": "Last Girl On Earth",
+            "path": "C:\\Development\\Releases\\Ember\\Files\\Audios\\Last Girl On Earth.mp3"
+        },
+        {
+            "author": "Author's Name",
+            "id": 10000008,
+            "name": "If I Die Young",
+            "path": "C:\\Development\\Releases\\Ember\\Files\\Audios\\If I Die Young.mp3"
+        }
+    ]
 }
